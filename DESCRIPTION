@@ -1,0 +1,12 @@
+Package: kompgait
+Title: Gait analyses of single gene deletions in JAX-KOMP2 pipeline
+Version: 0.1
+Date: 2022-09-20
+Author: Gautam S Sabnis <gautamsabnis15@gmail.com>
+Maintainer: Gautam S Sabnis <gautamsabnis15@gmail.com>
+Description: Performs different types of analyses of gait phenotypes of mutant animals in the JAX-KOMP2 pipeline.
+License: use_mit_license()
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.1
