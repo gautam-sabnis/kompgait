@@ -1,16 +1,17 @@
-#' Fit a GLMM to linear gait traits 
+#' Fit a LMM to linear gait traits 
 #' 
-#' Fit a generalized (gamma) linear mixed model to identify significant differences in trait's dispersion value (sd) between
-#' mutant and control strain
+#' Fit a linear mixed model to identify significant differences in 
+#' trait's dispersion value (sd) between mutant and control strain
 #' @param data data_per_animal dataframe
 #' @param CtrlStrain specify the control strain
 #' @param model specify the model  
 #' @return a list containing the results of the model 
 #' @examples 
-#' komp_glmer_dispersion(data = data_per_animal_disp_line, CtrlStrain = "C57BL/6NJ", model = "M3")
+#' komp_lmer_mean(data = data_per_animal_disp_line, CtrlStrain = 
+#' "C57BL/6NJ", model = "M3")
 #' @export 
 
-komp_glmer_dispersion <- function(data, CtrlStrain="C57BL/6NJ", model){	
+komp_lmer_dispersion <- function(data, CtrlStrain="C57BL/6NJ", model){	
 	if (model == 'M2' || model == 'M3'){
 		Phenos.lin <- setdiff(Phenos.lin,"speed");
 		Phenos.lin.Nomen <- setdiff(Phenos.lin.Nomen,"Speed");
@@ -25,7 +26,7 @@ komp_glmer_dispersion <- function(data, CtrlStrain="C57BL/6NJ", model){
 	esizeGen <- data.frame(matrix(0,nrow=length(Mutants),ncol=length(Phenos.lin)))
 	pvalSex <- data.frame(matrix(0,nrow=length(Mutants),ncol=length(Phenos.lin)))
 	esizeSex <- data.frame(matrix(0,nrow=length(Mutants),ncol=length(Phenos.lin)))
-
+	
 	pb <- txtProgressBar(min = 0, max = length(Mutants), style = 3)
 	for (s in 1:(length(Mutants))){
 		#cat("Analyzing Strain", paste0(Mutants[s]), "\n")
@@ -52,7 +53,8 @@ komp_glmer_dispersion <- function(data, CtrlStrain="C57BL/6NJ", model){
     	if (model=='M3')
     		{FReffects.lmer <- 'BodyLength + speed + Sex + Genotype + (1|TestDate)';
     		 FReffects <- 'BodyLength + speed + Sex + Genotype';
-    		 df$speed <- (df$speed - mean(df$speed,na.rm=TRUE))/sd(df$speed,na.rm=TRUE)}
+    		 df$speed <- (df$speed - mean(df$speed,na.rm=TRUE))/sd(df$speed,na.rm=TRUE)
+    		 df[,which(names(df) %in% Phenos.lin)] <- log(df[,which(names(df) %in% Phenos.lin)])}
     	else if (model == 'M2')
     		{FReffects.lmer <- 'speed + Sex + Genotype + (1|TestDate)';
     		 FReffects <- 'speed + Sex + Genotype'}
@@ -60,14 +62,11 @@ komp_glmer_dispersion <- function(data, CtrlStrain="C57BL/6NJ", model){
     		 FReffects <- 'BodyLength + Sex + Genotype'}
     	if (length(levels(df$TestDate)) >= 2){
     		formulas <- unname(sapply(Phenos.lin ,function(x) paste(x, "~", FReffects.lmer), simplify=TRUE)) 
-    		fits <- sapply(formulas, function(x) glmer(formula=x, data = df, family = Gamma(link = "log"), control=glmerControl(check.conv.singular = .makeCC(action = "ignore",  tol = 1e-4))),simplify=FALSE)
-    		fits_removeGenotype <- sapply(seq(length(fits)), function(x) update(fits[[x]], .~ .- Genotype))
-    		fits_removeSex <- sapply(seq(length(fits)), function(x) update(fits[[x]], .~ .- Sex))
-  			
-    		pvalGen[s,] <- sapply(seq(length(fits)), function(x) anova(fits[[x]],fits_removeGenotype[[x]])[["Pr(>Chisq)"]][2]) 
-			esizeGen[s,] <- sapply(seq(length(fits)), function(x) anova(fits[[x]],fits_removeSex[[x]])[["Pr(>Chisq)"]][2]) 
+    		fits <- sapply(formulas, function(x) lmer(formula=x, data = df, REML = FALSE, control=lmerControl(check.conv.singular = .makeCC(action = "ignore",  tol = 1e-4))),simplify=FALSE)
+    		pvalGen[s,] <- sapply(seq_along(fits), function(x) anova(unname(fits[x])[[1]],type='II')['Genotype','Pr(>F)']) 
+			esizeGen[s,] <- sapply(fits, function(mod) S(mod)$fixed.effects['GenotypeMutant','Estimate']) 
 			if (min(table(df$Genotype,df$Sex)['Mutant',]) > 1){
-				pvalGen[s,] <- sapply(seq(length(fits)), function(x) anova(fits[[x]],fits_removeGenotype[[x]])[["Pr(>Chisq)"]][2])  
+				pvalSex[s,] <- sapply(seq_along(fits), function(x) anova(unname(fits[x])[[1]],type='II')['Sex','Pr(>F)']) 
 				esizeSex[s,] <- sapply(seq_along(fits), function(x) S(fits[[x]])$fixed.effects['SexFemale','Estimate']) 
 			} else {
 				pvalSex[s,] <- rep(1,length(Phenos.lin)) 
@@ -90,7 +89,6 @@ komp_glmer_dispersion <- function(data, CtrlStrain="C57BL/6NJ", model){
 	esizeGen <- esizeGen[complete.cases(esizeGen),]
 	pvalSex <- pvalSex[complete.cases(pvalSex),]
 	esizeSex <- esizeSex[complete.cases(esizeSex),]
-	
 	#Genotype
 	Mutants <- setdiff(unique(data_per_animal$Strain),"C57BL/6NJ")
 	esizeGen <- as.matrix(esizeGen)
@@ -139,7 +137,7 @@ komp_glmer_dispersion <- function(data, CtrlStrain="C57BL/6NJ", model){
         border = "black",legend_height = unit(4, "cm"), just = c("right", "top")), col = col_fun, 
     	cluster_rows = FALSE, cluster_columns = FALSE, border = TRUE, cell_fun = function(j, i, x, y, width, height, fill) {
         grid.rect(x = x, y = y, width = width, height = height, gp = gpar(col = "grey"))
-        grid.circle(x = x, y = y, r = (esizeGen2[i, j]) * 0.4 * (max(unit.c(width, height))),
+        grid.circle(x = x, y = y, r = (esizeGen2[i, j]) * 0.8 * (max(unit.c(width, height))),
             gp = gpar(fill = col_fun((esizeGen2[i,j]))))}, rect_gp = gpar(type = "none"))
 
 	ht.Gen <- ht.Gen.p + ht.Gen.e

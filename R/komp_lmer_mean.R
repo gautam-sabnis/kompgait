@@ -9,7 +9,8 @@
 #' komp_lmer_mean(CtrlStrain = "C57BL/6NJ", model = "M3")
 #' @export 
 
-komp_lmer_mean <- function(CtrlStrain, model){	
+komp_lmer_mean <- function(data, CtrlStrain = "C57BL/6NJ", model){
+	data_per_stride <- data	
 	if (model == 'M2' || model == 'M3'){
 		Phenos.lin <- setdiff(Phenos.lin,"speed");
 		Phenos.lin.Nomen <- setdiff(Phenos.lin.Nomen,"Speed");
@@ -24,8 +25,10 @@ komp_lmer_mean <- function(CtrlStrain, model){
 	pvalSex <- data.frame(matrix(0,nrow=length(Mutants),ncol=length(Phenos.lin)))
 	esizeSex <- data.frame(matrix(0,nrow=length(Mutants),ncol=length(Phenos.lin)))
 	
+	pb <- txtProgressBar(min = 0, max = length(Mutants), style = 3)
 	for (s in 1:(length(Mutants))){
-		cat("Analyzing Strain", paste0(Mutants[s]), "\n")
+		#cat("Analyzing Strain", paste0(Mutants[s]), "\n")
+		setTxtProgressBar(pb,s)
 		CtrlIDs <- unique(subset(controlids.df,Strain == Mutants[s])$MouseID)
 		if (model == 'M2' || model == 'M3'){
 			df <- data_per_stride[data_per_stride$MouseID %in% CtrlIDs,c('MouseID','Strain','Sex','TestAge','TestDate','BodyLength','speed',Phenos.lin)]	
@@ -75,6 +78,7 @@ komp_lmer_mean <- function(CtrlStrain, model){
     	}
 	}
 
+	close(pb)
 	pvalGen <- pvalGen[complete.cases(pvalGen),]
 	esizeGen <- esizeGen[complete.cases(esizeGen),]
 	pvalSex <- pvalSex[complete.cases(pvalSex),]
@@ -132,7 +136,6 @@ komp_lmer_mean <- function(CtrlStrain, model){
 	ht.Gen <- ht.Gen.p + ht.Gen.e
 
 	#Sex
-	#Mutants <- setdiff(unique(data_per_stride$Strain),c(paste0(CtrlStrain,"Bzw1-/-"))
 	Mutants <- setdiff(unique(data_per_stride$Strain),c(paste0(CtrlStrain)))
 	esizeSex <- as.matrix(esizeSex)
 	rownames(pvalSex) <- Mutants

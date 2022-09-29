@@ -4,12 +4,14 @@
 \alias{komp_select_controls}
 \title{Select control animals from control strain}
 \usage{
-komp_select_controls(CtrlStrain, tw)
+komp_select_controls(data, CtrlStrain, tw)
 }
 \arguments{
+\item{data}{data_per_stride dataframe}
+
 \item{CtrlStrain}{specify the control strain}
 
-\item{tw}{specify the time period in days}
+\item{tw}{specify the time period (in days)}
 }
 \value{
 a data.frame containing containing Strain, MouseID, Type

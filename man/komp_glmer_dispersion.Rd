@@ -4,9 +4,11 @@
 \alias{komp_glmer_dispersion}
 \title{Fit a GLMM to linear gait traits}
 \usage{
-komp_glmer_dispersion(CtrlStrain = "C57BL/6NJ", model)
+komp_glmer_dispersion(data, CtrlStrain = "C57BL/6NJ", model)
 }
 \arguments{
+\item{data}{data_per_animal dataframe}
+
 \item{CtrlStrain}{specify the control strain}
 
 \item{model}{specify the model}
@@ -19,5 +21,5 @@ Fit a generalized (gamma) linear mixed model to identify significant differences
 mutant and control strain
 }
 \examples{
-komp_lmer_mean(CtrlStrain = "C57BL/6NJ", model = "M3")
+komp_glmer_dispersion(data = data_per_animal_disp_line, CtrlStrain = "C57BL/6NJ", model = "M3")
 }

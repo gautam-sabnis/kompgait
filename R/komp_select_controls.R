@@ -2,14 +2,16 @@
 #' 
 #' Choose control animals from the control strain to be examined during a specific time frame (in
 #' days)
+#' @param data data_per_stride dataframe
 #' @param CtrlStrain specify the control strain
-#' @param tw specify the time period in days 
+#' @param tw specify the time period (in days) 
 #' @return a data.frame containing containing Strain, MouseID, Type 
 #' @examples 
 #' komp_select_controls(CtrlStrain="C57BL/6NJ", tw = 21)
 #' @export 
 
-komp_select_controls <- function(CtrlStrain, tw){
+komp_select_controls <- function(data, CtrlStrain, tw){
+	data_per_stride <- data
 	control.list <- subset(data_per_stride, Strain == CtrlStrain)[,c('MouseID','Strain','TestDate')]
 	mutant.list <- subset(data_per_stride, Strain != CtrlStrain)[,c('MouseID','Strain','TestDate')]
 	mutant.list$Type <- 'Mutant'

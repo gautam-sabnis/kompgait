@@ -4,7 +4,7 @@
 \alias{komp_lmer_mean}
 \title{Fit a LMM to linear gait traits}
 \usage{
-komp_lmer_mean(CtrlStrain, model)
+komp_lmer_mean(data, CtrlStrain = "C57BL/6NJ", model)
 }
 \arguments{
 \item{CtrlStrain}{specify the control strain}
