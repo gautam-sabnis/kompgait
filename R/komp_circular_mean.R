@@ -1,117 +1,95 @@
-#' Fit a LMM to linear gait traits 
-#' 
-#' Fit a linear mixed model to identify significant differences in 
-#' trait's average value between
-#' mutant and control strain
-#' @param data data frame containing per stride data
+#' Fit a circular-linear regression model
+#'
+#' Fit a circular-linear regression model to circular posture 
+#' phenotypes 
+#' @param data data frame containing per animal data
 #' @param CtrlStrain specify the control strain
 #' @param model specify the model  
 #' @return a list containing the results of the model 
 #' @examples 
-#' komp_lmer_mean(data, CtrlStrain = "C57BL/6NJ", model = "M3")
+#' komp_circular_mean(data, CtrlStrain = "C57BL/6NJ", model = "M3")
 #' @export 
 
-komp_lmer_mean <- function(data, CtrlStrain = "C57BL/6NJ", model){
-	data_per_stride <- data	
-	if (model == 'M2' || model == 'M3'){
-		Phenos.lin <- setdiff(Phenos.lin,"speed");
-		Phenos.lin.Nomen <- setdiff(Phenos.lin.Nomen,"Speed");
-	} else {
-		Phenos.lin <- Phenos.lin;
-		Phenos.lin.Nomen <- Phenos.lin.Nomen;
-	}
+komp_circular_mean <- function(data, CtrlStrain="C57BL/6NJ", model){
 
-	Mutants <- setdiff(unique(data_per_stride$Strain),paste0(CtrlStrain))
-	pvalGen <- data.frame(matrix(0,nrow=length(Mutants),ncol=length(Phenos.lin)))
-	esizeGen <- data.frame(matrix(0,nrow=length(Mutants),ncol=length(Phenos.lin)))
-	pvalSex <- data.frame(matrix(0,nrow=length(Mutants),ncol=length(Phenos.lin)))
-	esizeSex <- data.frame(matrix(0,nrow=length(Mutants),ncol=length(Phenos.lin)))
-	
-	pb <- txtProgressBar(min = 0, max = length(Mutants), style = 3)
-	for (s in 1:(length(Mutants))){
-		#cat("Analyzing Strain", paste0(Mutants[s]), "\n")
-		setTxtProgressBar(pb,s)
+	Phenos.circ.Nomen <- c('Base Tail Phase', 'Tip Tail Phase', 'Nose Phase')
+	data_per_animal <- data
+	Mutants <- setdiff(unique(data_per_animal$Strain), "C57BL/6NJ")
+	pvalGen <- data.frame(matrix(0,nrow=length(Mutants),ncol=length(Phenos.circ)))
+	esizeGen <- data.frame(matrix(0,nrow=length(Mutants),ncol=length(Phenos.circ)))
+	pvalSex <- data.frame(matrix(0,nrow=length(Mutants),ncol=length(Phenos.circ)))
+	esizeSex <- data.frame(matrix(0,nrow=length(Mutants),ncol=length(Phenos.circ)))
+	names(pvalGen) <- Phenos.circ
+	names(esizeGen) <- Phenos.circ
+	names(pvalSex) <- Phenos.circ
+	names(esizeSex) <- Phenos.circ
+	for (s in 1:length(Mutants)){
+		setTimeLimit(60)
+		cat("Analyzing Strain", paste0(Mutants[s]), "\n")
 		CtrlIDs <- unique(subset(controlids.df,Strain == Mutants[s])$MouseID)
-		if (model == 'M2' || model == 'M3'){
-			df <- data_per_stride[data_per_stride$MouseID %in% CtrlIDs,c('MouseID','Strain','Sex','TestAge','TestDate','BodyLength','speed',Phenos.lin)]	
-		} else {
-			df <- data_per_stride[data_per_stride$MouseID %in% CtrlIDs,c('MouseID','Strain','Sex','TestAge','TestDate','BodyLength',Phenos.lin)]
-		
-		}
+		df <- data_per_animal[data_per_animal$MouseID %in% CtrlIDs,c('MouseID','Strain','Sex','TestAge','TestDate','BodyLength','speed',Phenos.circ)]	
+		df[names(df) %in% Phenos.circ] <- lapply(df[names(df) %in% Phenos.circ], function(x) 
+			circular(x, type = 'directions', units = 'radians'))
 		df['Genotype'] <- ifelse(df$Strain == CtrlStrain, 'Control','Mutant')
     	df$Genotype <- relevel(factor(df$Genotype), ref = "Control")
+		#df <- df[df$TestDate %in% names(which(table(df$TestDate, df$Genotype)[,2] >= 1)), ]
 		df$Strain <- droplevels(df$Strain)
-		df$TestDate <- as.factor(df$TestDate)
 		df$TestDate <- droplevels(df$TestDate)
 		df$Sex <- relevel(factor(df$Sex), ref = "Male")
     	df$TestAge <- as.factor(df$TestAge)
     	df$BodyLength <- (df$BodyLength - mean(df$BodyLength))/sd(df$BodyLength)
+    	df[,sapply(df,is.numeric)] <- apply(df[,sapply(df,is.numeric)],2, function(x) (x-mean(x))/sd(x))
     	if (model=='M3')
-    		{FReffects.lmer <- 'BodyLength + speed + Sex + Genotype + (1|TestDate/MouseID)';
-    		 FReffects <- 'BodyLength + speed + Sex + Genotype + TestDate';
-    		 df$speed <- (df$speed - mean(df$speed,na.rm=TRUE))/sd(df$speed,na.rm=TRUE)}
-    	else if (model == 'M2')
-    		{FReffects.lmer <- 'speed + Sex + Genotype + (1|TestDate/MouseID)';
-    		 FReffects <- 'speed + Sex + Genotype + TestDate';
-    		 df$speed <- (df$speed - mean(df$speed,na.rm=TRUE))/sd(df$speed,na.rm=TRUE)}
-    	else {FReffects.lmer <- 'BodyLength + Sex + Genotype + (1|TestDate/MouseID)';
-    		 FReffects <- 'BodyLength + Sex + Genotype + TestDate'}
-    	if (length(levels(df$TestDate)) >= 2){
-    		formulas <- unname(sapply(Phenos.lin ,function(x) paste(x, "~", FReffects.lmer), simplify=TRUE)) 
-    		fits <- sapply(formulas, function(x) lmer(formula=x, data = df, REML = FALSE,
-    			control=lmerControl(check.conv.singular = .makeCC(action = "ignore",  tol = 1e-4))),simplify=FALSE)
-    		pvalGen[s,] <- sapply(seq_along(fits), function(x) anova(unname(fits[x])[[1]],type='II')['Genotype','Pr(>F)']) 
-			esizeGen[s,] <- sapply(fits, function(mod) S(mod)$fixed.effects['GenotypeMutant','Estimate']) 
-			if (min(table(df$Genotype,df$Sex)['Mutant',]) > 1){
-				pvalSex[s,] <- sapply(seq_along(fits), function(x) anova(unname(fits[x])[[1]],type='II')['Sex','Pr(>F)']) 
-				esizeSex[s,] <- sapply(seq_along(fits), function(x) S(fits[[x]])$fixed.effects['SexFemale','Estimate']) 
-			} else {
-				pvalSex[s,] <- rep(1,length(Phenos.lin)) 
-				esizeSex[s,] <- rep(0,length(Phenos.lin)) 
-			}
-			
-    	} else {
-    		formulas <- unname(sapply(Phenos.lin ,function(x) paste(x, "~", FReffects), simplify=TRUE)) 
-    		fits <- lapply(formulas, lm, data = df)
-    		pvalGen[s,] <- sapply(seq_along(fits), function(x) Anova(fits[[x]])['Genotype','Pr(>F)']) 
-			esizeGen[s,] <- sapply(seq_along(fits), function(x) unname(fits[[x]]$coefficients['GenotypeMutant'])) 
-			pvalSex[s,] <- sapply(seq_along(fits), function(x) Anova(fits[[x]])['Sex','Pr(>F)']) 
-			esizeSex[s,] <- sapply(seq_along(fits), function(x) unname(fits[[x]]$coefficients['SexFemale'])) 
-    	}
-	}
+    	{X <- cbind(df$BodyLength, df$Genotype, df$speed, df$Sex)} else if (model == 'M2')
+    	{X <- cbind(df$speed, df$Genotype, df$Sex)} else 
+    	{X <- cbind(df$BodyLength, df$Genotype, df$Sex)}
 
-	close(pb)
-	pvalGen <- pvalGen[complete.cases(pvalGen),]
-	esizeGen <- esizeGen[complete.cases(esizeGen),]
-	pvalSex <- pvalSex[complete.cases(pvalSex),]
-	esizeSex <- esizeSex[complete.cases(esizeSex),]
+    	fits <- lapply(Phenos.circ, function(p) {
+		tryCatch({
+			tmp <- suppressWarnings(lm.circular(y=df[[paste0(p)]], x = X, init=rep(0,ncol(X)), type='c-l'));
+			pvalGen[s,p] <<- tmp$p.values[2];
+			esizeGen[s,p] <<- tmp$coefficients[2];
+			if (model == "M3"){
+				pvalSex[s,p] <<- tmp$p.value[4];
+				esizeSex[s,p] <<- tmp$coefficients[4];
+			} else {
+				pvalSex[s,p] <<- tmp$p.value[3];
+				esizeSex[s,p] <<- tmp$coefficients[3];
+			}
+			}, error = function(e){cat("ERROR :",conditionMessage(e), "\n")})
+		})
+    }	
+	
+	pvalGen[pvalGen == 0] <- NA #For lines where the algorithm didn't converge
+	
 	#Genotype
-	Mutants <- setdiff(unique(data_per_stride$Strain),paste0(CtrlStrain))
 	esizeGen <- as.matrix(esizeGen)
 	rownames(pvalGen) <- Mutants
-	colnames(pvalGen) <- Phenos.lin.Nomen
+	colnames(pvalGen) <- Phenos.circ.Nomen
 	rownames(esizeGen) <- Mutants
-	colnames(esizeGen) <- Phenos.lin.Nomen
-	pvalGenadj <- sapply(Phenos.lin.Nomen, function(r) p.adjust(pvalGen[,r],method = 'fdr'))
+	colnames(esizeGen) <- Phenos.circ.Nomen
+	pvalGenadj <- sapply(Phenos.circ.Nomen, function(r) p.adjust(pvalGen[,r],method = 'fdr'))
 	pvalGenSignif <- apply(pvalGenadj, 2, function(j) symnum(j, corr = FALSE, na = FALSE, cutpoints = c(0, 
     	0.001, 0.01, 0.05, 0.1, 1), symbols = c("***", "**", "*", "+", " ")))
-    lodGen <- apply(pvalGenadj,2, function(x)-log(x))
+    lodGen <- apply(pvalGenadj,2, function(x) -log(x))
+    lodGen[is.na(lodGen)] <- 0
     rownames(pvalGenSignif) <- Mutants
     rownames(lodGen) <- Mutants
-	colnames(lodGen) <- Phenos.lin.Nomen
+	colnames(lodGen) <- Phenos.circ.Nomen
 	lodGen <- lodGen[order(row.names(lodGen)),]
 	esizeGen <- esizeGen[order(row.names(esizeGen)),]
 	pvalGenSignif <- pvalGenSignif[order(row.names(pvalGenSignif)),]
 	lodGen2 <- lodGen[sapply(seq(nrow(lodGen)), function(x) any(lodGen[x,] >= 2.98)),]
 	esizeGen2 <- esizeGen[sapply(seq(nrow(lodGen)), function(x) any(lodGen[x,] >= 2.98)),]
 	pvalGenSignif2 <- pvalGenSignif[sapply(seq(nrow(lodGen)), function(x) any(lodGen[x,] >= 2.98)),]
-	Mutants <- rownames(lodGen2)
+
+	#Mutants <- rownames(lodGen2)
 	row <- which(abs(esizeGen2)==max(abs(esizeGen2)), arr.ind=TRUE)[1:2][1]
 	col <- which(abs(esizeGen2)==max(abs(esizeGen2)), arr.ind=TRUE)[1:2][2]
 	esizeGen2[row,col] <- tail(sort(abs(esizeGen2)),1)[1]
-	summ.df.Gen <- data.frame(Phenos.lin.Nomen, 
-	pink = sapply(seq(Phenos.lin.Nomen), function(x) sum(as.numeric(lodGen2[,x] > 2.99 & abs(esizeGen2[,x]) >= 0.2))), 
-	black = sapply(seq(Phenos.lin.Nomen), function(x) sum(as.numeric(lodGen2[,x] > 2.99))))
+	summ.df.Gen <- data.frame(Phenos.circ.Nomen, 
+	pink = sapply(seq(Phenos.circ.Nomen), function(x) sum(as.numeric(lodGen2[,x] > 2.99 & abs(esizeGen2[,x]) >= 0.2))), 
+	black = sapply(seq(Phenos.circ.Nomen), function(x) sum(as.numeric(lodGen2[,x] > 2.99))))
 
 	pinkStrainsGen <- names(which(apply((lodGen2 > 2.99 | lodGen2 > 2.99) & (abs(esizeGen2) >= 0.2 | abs(esizeGen2) >= 0.2),1,any)))
 	blackStrainsGen <- names(apply(lodGen2 > 2.99,1,any))
@@ -132,26 +110,27 @@ komp_lmer_mean <- function(data, CtrlStrain = "C57BL/6NJ", model){
         border = "black",legend_height = unit(4, "cm"), just = c("right", "top")), col = col_fun, 
     	cluster_rows = FALSE, cluster_columns = FALSE, border = TRUE, cell_fun = function(j, i, x, y, width, height, fill) {
         grid.rect(x = x, y = y, width = width, height = height, gp = gpar(col = "grey"))
-        grid.circle(x = x, y = y, r = (esizeGen2[i, j]) * 1 * (max(unit.c(width, height))),
+        grid.circle(x = x, y = y, r = (esizeGen2[i, j]) * 1 * (min(unit.c(width, height))),
             gp = gpar(fill = col_fun((esizeGen2[i,j]))))}, rect_gp = gpar(type = "none"))
 
 	ht.Gen <- ht.Gen.p + ht.Gen.e
 
 	#Sex
-	Mutants <- setdiff(unique(data_per_stride$Strain),c(paste0(CtrlStrain)))
+	pvalSex[pvalSex == 0] <- NA #For lines where the algorithm didn't converge
 	esizeSex <- as.matrix(esizeSex)
 	rownames(pvalSex) <- Mutants
-	colnames(pvalSex) <- Phenos.lin.Nomen
+	colnames(pvalSex) <- Phenos.circ.Nomen
 	rownames(esizeSex) <- Mutants
-	colnames(esizeSex) <- Phenos.lin.Nomen
-	pvalSexadj <- sapply(Phenos.lin.Nomen, function(r) p.adjust(pvalSex[,r],method = 'fdr'))
+	colnames(esizeSex) <- Phenos.circ.Nomen
+	pvalSexadj <- sapply(Phenos.circ.Nomen, function(r) p.adjust(pvalSex[,r],method = 'fdr'))
 	pvalSexSignif <- apply(pvalSexadj, 2, function(j) symnum(j, corr = FALSE, na = FALSE, cutpoints = c(0, 
     	0.001, 0.01, 0.05, 0.1, 1), symbols = c("***", "**", "*", "+", " ")))
-    lodSex <- apply(pvalSexadj,2, function(x)-log(x))
+    lodSex <- apply(pvalSexadj,2, function(x) -log(x))
+    lodSex[is.na(lodSex)] <- 0
     rownames(pvalSexSignif) <- Mutants
     
     rownames(lodSex) <- Mutants
-	colnames(lodSex) <- Phenos.lin.Nomen
+	colnames(lodSex) <- Phenos.circ.Nomen
 	lodSex <- lodSex[order(row.names(lodSex)),]
 	esizeSex <- esizeSex[order(row.names(esizeSex)),]
 	pvalSexSignif <- pvalSexSignif[order(row.names(pvalSexSignif)),]
@@ -163,9 +142,9 @@ komp_lmer_mean <- function(data, CtrlStrain = "C57BL/6NJ", model){
 	col <- which(abs(esizeSex2)==max(abs(esizeSex2)), arr.ind=TRUE)[1:2][2]
 	esizeSex2[row,col] <- tail(sort(abs(esizeSex2)),1)[1]
 
-    summ.df.Sex <- data.frame(Phenos.lin.Nomen, 
-	pink = sapply(seq(Phenos.lin.Nomen), function(x) sum(as.numeric(lodSex2[,x] > 2.99 & abs(esizeSex2[,x]) >= 0.1))), 
-	black = sapply(seq(Phenos.lin.Nomen), function(x) sum(as.numeric(lodSex2[,x] > 2.99))))
+    summ.df.Sex <- data.frame(Phenos.circ.Nomen, 
+	pink = sapply(seq(Phenos.circ.Nomen), function(x) sum(as.numeric(lodSex2[,x] > 2.99 & abs(esizeSex2[,x]) >= 0.1))), 
+	black = sapply(seq(Phenos.circ.Nomen), function(x) sum(as.numeric(lodSex2[,x] > 2.99))))
 
 	pinkStrainsSex <- names(which(apply((lodSex2 > 2.99 | lodSex2 > 2.99) & (abs(esizeSex2) >= 0.1 | abs(esizeSex2) >= 0.1),1,any)))
 	blackStrainsSex <- names(apply(lodGen2 > 2.99,1,any))

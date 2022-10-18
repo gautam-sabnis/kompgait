@@ -15,6 +15,7 @@ filter_data <- function(data_stride, data_animal_mean, data_animal_disp, thresho
 	data_per_stride <- data_stride
 	data_per_animal_mean <- data_animal_mean
 	data_per_animal_disp <- data_animal_disp
+	names(data_per_stride)[names(data_per_stride) == "OFA_Strain.Name"] <- "Strain"
 
 	Strains_thresh <- names(table(data_per_animal_mean$Strain))[table(data_per_animal_mean$Strain) >= threshold]
 	data_per_animal_mean <- data_per_animal_mean[data_per_animal_mean$Strain %in% Strains_thresh,] 

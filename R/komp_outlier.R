@@ -1,6 +1,6 @@
 #' Multivariate outlier detection  
 #' 
-#' Use a PCA-based projection outlier algorithm to identify outlier mutant lines
+#' Use a PCA-based projection outlier algorithm to identify outlier #' mutant lines
 #' @param data data.frame containing data at the strain level 
 #' @return a plot showing outlier mutant lines in red 
 #' @examples 
@@ -24,12 +24,13 @@ komp_outlier_strain <- function(data){
 
 #' Multivariate outlier detection  
 #' 
-#' Use a PCA-based projection outlier algorithm to identify outlier animal
-#' @param data_per_strain a data.frame containing data at the strain level 
-#' @param data_per_animal a data.frame containing data at the animal level 
+#' Use a PCA-based projection outlier algorithm to identify outlier #' animal
+#' @param data_per_strain a data.frame containing data at the strain #' level 
+#' @param data_per_animal a data.frame containing data at the animal #' level 
 #' @return a plot showing outlier animals in red 
 #' @examples 
-#' komp_outlier_strain(data_per_strain = data_per_strain, data_per_animal = data_per_animal)
+#' komp_outlier_strain(data_per_strain = data_per_strain, 
+#' data_per_animal = data_per_animal)
 #' @export 
 
 komp_outlier_animal <- function(data_per_strain, data_per_animal){

@@ -7,16 +7,17 @@
 komp_outlier_animal(data_per_strain, data_per_animal)
 }
 \arguments{
-\item{data_per_strain}{a data.frame containing data at the strain level}
+\item{data_per_strain}{a data.frame containing data at the strain #' level}
 
-\item{data_per_animal}{a data.frame containing data at the animal level}
+\item{data_per_animal}{a data.frame containing data at the animal #' level}
 }
 \value{
 a plot showing outlier animals in red
 }
 \description{
-Use a PCA-based projection outlier algorithm to identify outlier animal
+Use a PCA-based projection outlier algorithm to identify outlier #' animal
 }
 \examples{
-komp_outlier_strain(data_per_strain = data_per_strain, data_per_animal = data_per_animal)
+komp_outlier_strain(data_per_strain = data_per_strain, 
+data_per_animal = data_per_animal)
 }

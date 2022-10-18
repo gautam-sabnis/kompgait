@@ -2,6 +2,7 @@
 
 export(UpSet_plot)
 export(filter_data)
+export(komp_circular_mean)
 export(komp_desc_plot)
 export(komp_glmer_dispersion)
 export(komp_lda)
@@ -13,4 +14,5 @@ export(komp_select_controls)
 export(load_data)
 export(plot_model_comparisons)
 export(plot_outlier_animal_comparison)
+export(post_hoc_comparison)
 export(vignette_plot)

@@ -35,7 +35,7 @@ load_data <- function(data, type){
 	data_per_stride <- data_per_stride[data_per_stride$Strain %in% Strains, ]
 
 	if (type == "circular"){
-		require(circular)
+		#require(circular)
 		data_per_stride[names(data_per_stride) %in% Phenos.circ] <- lapply(data_per_stride[names(data_per_stride) %in% Phenos.circ], function(x) x*(2*pi))
 		data_per_stride[names(data_per_stride) %in% Phenos.circ] <- lapply(data_per_stride[names(data_per_stride) %in% Phenos.circ],function(x) circular::circular(x, type = 'angles', units = 'radians'))	
 
@@ -55,8 +55,7 @@ load_data <- function(data, type){
 		TestAge <- sapply(seq(dim(data_per_animal_mean)[1]), function(x) data_per_stride[data_per_stride$MouseID == data_per_animal_mean$MouseID[x], 'TestAge'][1])
 		Sex <- sapply(seq(dim(data_per_animal_mean)[1]), function(x) data_per_stride[data_per_stride$MouseID == data_per_animal_mean$MouseID[x], 'Sex'][1])
 		data_per_animal_mean <- cbind(Strain, TestAge, TestDate, Sex, BodyLength, speed, data_per_animal_mean)
-		data_per_animal_mean[,names(data_per_animal_mean) %in% Phenos.circ] <- log(data_per_animal_mean[,names(data_per_animal_mean) %in% Phenos.circ])
-
+		
 		data_per_animal_disp <- aggregate(x = data_per_stride[,names(data_per_stride) %in% c(Phenos.circ)], by = data_per_stride[c("MouseID")], FUN = angular.deviation)
 		BodyLength <- sapply(seq(dim(data_per_animal_disp)[1]), function(x) data_per_stride[data_per_stride$MouseID == data_per_animal_disp$MouseID[x], 'BodyLength'][1])
 		speed <- sapply(seq(dim(data_per_animal_disp)[1]), function(x) mean(data_per_stride[data_per_stride$MouseID == data_per_animal_disp$MouseID[x], 'speed']))
@@ -68,8 +67,6 @@ load_data <- function(data, type){
 		data_per_animal_disp[,names(data_per_animal_disp) %in% Phenos.circ] <- log(data_per_animal_disp[,names(data_per_animal_disp) %in% Phenos.circ])
 
 		return(list(data_per_animal_mean, data_per_animal_disp))
-
-
 	} else {
 
 		#Focus on certain speed bins 

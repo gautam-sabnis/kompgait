@@ -13,7 +13,7 @@ komp_outlier_strain(data)
 a plot showing outlier mutant lines in red
 }
 \description{
-Use a PCA-based projection outlier algorithm to identify outlier mutant lines
+Use a PCA-based projection outlier algorithm to identify outlier #' mutant lines
 }
 \examples{
 komp_outlier_strain(data = data_per_strain)

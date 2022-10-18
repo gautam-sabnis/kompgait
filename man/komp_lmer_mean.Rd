@@ -7,6 +7,8 @@
 komp_lmer_mean(data, CtrlStrain = "C57BL/6NJ", model)
 }
 \arguments{
+\item{data}{data frame containing per stride data}
+
 \item{CtrlStrain}{specify the control strain}
 
 \item{model}{specify the model}
@@ -15,9 +17,10 @@ komp_lmer_mean(data, CtrlStrain = "C57BL/6NJ", model)
 a list containing the results of the model
 }
 \description{
-Fit a linear mixed model to identify significant differences in trait's average value between
+Fit a linear mixed model to identify significant differences in
+trait's average value between
 mutant and control strain
 }
 \examples{
-komp_lmer_mean(CtrlStrain = "C57BL/6NJ", model = "M3")
+komp_lmer_mean(data, CtrlStrain = "C57BL/6NJ", model = "M3")
 }
